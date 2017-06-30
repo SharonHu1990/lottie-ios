@@ -205,6 +205,8 @@
   NSArray *components = [animationName componentsSeparatedByString:@"."];
   animationName = components.firstObject;
   
+    
+    //解析json数据
   LOTComposition *comp = [[LOTAnimationCache sharedCache] animationForKey:animationName];
   if (comp) {
     return [[LOTAnimationView alloc] initWithModel:comp];
@@ -564,7 +566,7 @@
   }
 
   [CATransaction begin];
-  [CATransaction setDisableActions:YES];
+  [CATransaction setDisableActions:YES];//禁止隐性动画
   _compLayer.transform = CATransform3DIdentity;
   _compLayer.bounds = _sceneModel.compBounds;
   _compLayer.transform = xform;

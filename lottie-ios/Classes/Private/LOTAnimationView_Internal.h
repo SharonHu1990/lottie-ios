@@ -23,12 +23,36 @@ typedef enum : NSUInteger {
 - (void)setAnimatedProgress:(CGFloat)progress;
 - (void)setAnimationSpeed:(CGFloat)speed;
 
+
+/**
+ 循环动画
+ */
 @property (nonatomic, readonly) BOOL loopAnimation;
+
+
+/**
+ 动画正在执行
+ */
 @property (nonatomic, readonly) BOOL animationIsPlaying;
 
 // Model Properties
+
+
+/**
+ 动画进度
+ */
 @property (nonatomic, readonly) CGFloat animatedProgress;
+
+
+/**
+ 动画持续时间
+ */
 @property (nonatomic, readonly) CGFloat animationDuration;
+
+
+/**
+ 动画速度
+ */
 @property (nonatomic, readonly) CGFloat animationSpeed;
 
 @property (nonatomic, readonly) CALayer * _Nullable layer;
