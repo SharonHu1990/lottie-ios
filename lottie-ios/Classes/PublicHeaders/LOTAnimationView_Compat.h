@@ -9,6 +9,11 @@
 #if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
 
 #import <UIKit/UIKit.h>
+
+
+/**
+@compatibility_alias ： 允许现有类有不同的名称作为别名
+ */
 @compatibility_alias LOTView UIView;
 
 #else

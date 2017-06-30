@@ -11,6 +11,11 @@
 
 @class LOTAsset;
 @class LOTLayerGroup;
+
+
+/**
+ 图片资源组
+ */
 @interface LOTAssetGroup : NSObject
 
 - (instancetype _Nonnull)initWithJSON:(NSArray * _Nonnull)jsonArray;

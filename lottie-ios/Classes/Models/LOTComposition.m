@@ -21,6 +21,14 @@
   return self;
 }
 
+
+
+/**
+ 解析JSon对象
+
+ @param jsonDictionary JSon对象
+ @brief w:视图的宽度；h:视图的高度；ip：起始关键帧；op：结束关键帧；fr：帧率
+ */
 - (void)_mapFromJSON:(NSDictionary *)jsonDictionary {
   NSNumber *width = jsonDictionary[@"w"];
   NSNumber *height = jsonDictionary[@"h"];
@@ -39,6 +47,8 @@
     _timeDuration = timeDuration;
   }
   
+
+  //图片集合
   NSArray *assetArray = jsonDictionary[@"assets"];
   if (assetArray.count) {
     _assetGroup = [[LOTAssetGroup alloc] initWithJSON:assetArray];

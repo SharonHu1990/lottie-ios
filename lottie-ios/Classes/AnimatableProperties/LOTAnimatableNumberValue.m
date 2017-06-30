@@ -9,13 +9,16 @@
 #import "LOTAnimatableNumberValue.h"
 #import "LOTHelpers.h"
 
+/**
+ 动画属性值
+ */
 @interface LOTAnimatableNumberValue ()
 
 @property (nonatomic, readonly) NSArray<NSNumber *> *valueKeyframes;
 @property (nonatomic, readonly) NSArray<NSNumber *> *keyTimes;
 @property (nonatomic, readonly) NSArray<CAMediaTimingFunction *> *timingFunctions;
-@property (nonatomic, readonly) NSTimeInterval delay;
-@property (nonatomic, readonly) NSTimeInterval duration;
+@property (nonatomic, readonly) NSTimeInterval delay;//动画延迟时间
+@property (nonatomic, readonly) NSTimeInterval duration;//动画持续时间
 @property (nonatomic, readonly) NSNumber *startFrame;
 @property (nonatomic, readonly) NSNumber *durationFrames;
 @property (nonatomic, readonly) NSNumber *frameRate;
@@ -27,12 +30,28 @@
 - (instancetype)initWithNumberValues:(NSDictionary *)numberValues frameRate:(NSNumber *)frameRate {
   self = [super init];
   if (self) {
+      
+//      数字值number value
+//      通过属性k取到内容，根据数据类型区分，有帧动画和无动画两种情况。
+      
+      
+      /**
+       *k对应的值有如下几种情况：
+       *1.数字或3个数字组成的数组，表示对应属性的值，没有动画。比如锚点[62.5,46.5,0]，缩放[-100,100,100]，不透明度0等
+       *2.数组类型并且数组第一个对象的t有值时，表示帧动画。第一个对象表示动画开始的属性，最后一个对象表示动画结束的属性。通过以下参数可以拼装出关键帧的属性值、关键帧时间点、关键帧之间的时间函数，
+       *    t表示矢量图显示的关键帧
+       *    s和e表示开始/结束属性值
+       *    i和o决定动画的时间函数
+       */
     _frameRate = frameRate;
     id value = numberValues[@"k"];
     if ([value isKindOfClass:[NSArray class]] &&
         [[(NSArray *)value firstObject] isKindOfClass:[NSDictionary class]] &&
         [(NSArray *)value firstObject][@"t"]) {
-      //Keframes
+        //"t" : 矢量图显示的关键帧(数组类型并且数组第一个对象的t有值时，表示帧动画)
+        //K 数组的对象中的"i"字典表示动画开始的属性，对象中"o"表示动画结束的属性。"i" 和 "o"决定动画的时间函数
+        
+      //Keframes关键帧
       [self _buildAnimationForKeyframes:value];
     } else {
       //Single Value, no animation
@@ -48,29 +67,38 @@
 - (void)_buildAnimationForKeyframes:(NSArray<NSDictionary *> *)keyframes {
   
   NSMutableArray *keyTimes = [NSMutableArray array];
+    
   NSMutableArray *timingFunctions = [NSMutableArray array];
+    
   NSMutableArray<NSNumber *> *numberValues = [NSMutableArray array];
   
+    //动画开始帧
   _startFrame = keyframes.firstObject[@"t"];
+    
+    //动画结束帧
   NSNumber *endFrame = keyframes.lastObject[@"t"];
   
   NSAssert((_startFrame && endFrame && _startFrame.integerValue <= endFrame.integerValue),
            @"Lottie: Keyframe animation has incorrect time values or invalid number of keyframes");
   // Calculate time duration
   _durationFrames = @(endFrame.floatValue - _startFrame.floatValue);
-  
+  //动画持续时间
   _duration = _durationFrames.floatValue / _frameRate.floatValue;
+    
+    //延迟时间（动画经过多少时间之后开始执行）
   _delay = _startFrame.floatValue / _frameRate.floatValue;
   
   BOOL addStartValue = YES;
   BOOL addTimePadding = NO;
   NSNumber *outValue = nil;
   
+    
+    //keyframes :关键帧动画； keyframe：每一个关键帧
   for (NSDictionary *keyframe in keyframes) {
-    // Get keyframe time value
+    // Get keyframe time value 关键帧的帧数
     NSNumber *frame = keyframe[@"t"];
     // Calculate percentage value for keyframe.
-    //CA Animations accept time values of 0-1 as a percentage of animation completed.
+    //CA Animations accept time values of 0-1 as a percentage of animation completed. 当前关键帧占整个动画持续时间的比率
     NSNumber *timePercentage = @((frame.floatValue - _startFrame.floatValue) / _durationFrames.floatValue);
     
     if (outValue) {
@@ -96,7 +124,7 @@
     }
     
     if (addTimePadding) {
-      // add time padding
+      // add time padding 添加时间填充
       NSNumber *holdPercentage = @(timePercentage.floatValue - 0.00001);
       [keyTimes addObject:[holdPercentage copy]];
       addTimePadding = NO;
@@ -116,11 +144,19 @@
       
       if (timingControlPoint1 && timingControlPoint2) {
         // Easing function
-        CGPoint cp1 = [self _pointFromValueDict:timingControlPoint1];
-        CGPoint cp2 = [self _pointFromValueDict:timingControlPoint2];
+        CGPoint cp1 = [self _pointFromValueDict:timingControlPoint1];//时间函数的参数，贝塞尔曲线外切点值
+        CGPoint cp2 = [self _pointFromValueDict:timingControlPoint2];//时间函数的参数，贝塞尔曲线内切点值
+          
+          //自定义动画的缓冲函数
         timingFunction = [CAMediaTimingFunction functionWithControlPoints:cp1.x :cp1.y :cp2.x :cp2.y];
       } else {
         // No easing function specified, fallback to linear
+
+          /*kCAMediaTimingFunctionLinear:线性的计时函数
+           *kCAMediaTimingFunctionEaseIn:慢慢加速然后突然停止
+           *kCAMediaTimingFunctionEaseOut:全速开始，然后慢慢减速停止
+           *kCAMediaTimingFunctionEaseInEaseOut:慢慢加速然后再慢慢减速
+           */
         timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionLinear];
       }
       [timingFunctions addObject:timingFunction];
@@ -130,6 +166,7 @@
     [keyTimes addObject:timePercentage];
     
     // Check if keyframe is a hold keyframe
+      // "h": 冻结关键帧，在结束时添加同样的矢量图
     if ([keyframe[@"h"] boolValue]) {
       // set out value as start and flag next frame accordinly
       outValue = startValue;

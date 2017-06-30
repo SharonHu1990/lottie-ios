@@ -53,43 +53,62 @@
   
   _parentID = [jsonDictionary[@"parent"] copy];
   
+    
+  /**当前图层的开始和结束关键帧，决定该图层动画开始和结束的时间，使动画可以只在整个过程的某一部分产生。*/
   _inFrame = [jsonDictionary[@"ip"] copy];
   _outFrame = [jsonDictionary[@"op"] copy];
+    
+  /**帧率和根图层共享。*/
   _framerate = framerate;
   
+    
+  /**当前为图片层时候，宽高通过asset来读取。预合成层和固态层，从属性读取，其他情况直接读取根图层的宽高。*/
   if (_layerType == LOTLayerTypePrecomp) {
+      
+    /**预合成层宽高*/
     _layerHeight = [jsonDictionary[@"h"] copy];
     _layerWidth = [jsonDictionary[@"w"] copy];
     [assetGroup buildAssetNamed:_referenceID
                      withBounds:CGRectMake(0, 0, _layerWidth.floatValue, _layerHeight.floatValue)
                    andFramerate:_framerate];
   } else if (_layerType == LOTLayerTypeImage) {
+      
     [assetGroup buildAssetNamed:_referenceID
                      withBounds:CGRectZero
                    andFramerate:_framerate];
+    /**图片层宽高*/
     _imageAsset = [assetGroup assetModelForID:_referenceID];
     _layerWidth = [_imageAsset.assetWidth copy];
     _layerHeight = [_imageAsset.assetHeight copy];
   } else if (_layerType == LOTLayerTypeSolid) {
+      
+    /**固态层宽高*/
     _layerWidth = jsonDictionary[@"sw"];
     _layerHeight = jsonDictionary[@"sh"];
     NSString *solidColor = jsonDictionary[@"sc"];
     _solidColor = [UIColor LOT_colorWithHexString:solidColor];
   } else {
+      
+    /**根图层宽高*/
     _layerWidth = @(compBounds.size.width);
     _layerHeight = @(compBounds.size.height);
   }
   
   _layerBounds = CGRectMake(0, 0, _layerWidth.floatValue, _layerHeight.floatValue);
   
+  /**外观信息*/
   NSDictionary *ks = jsonDictionary[@"ks"];
   
+    
+    //不透明度
   NSDictionary *opacity = ks[@"o"];
   if (opacity) {
     _opacity = [[LOTAnimatableNumberValue alloc] initWithNumberValues:opacity frameRate:_framerate];
     [_opacity remapValuesFromMin:@0 fromMax:@100 toMin:@0 toMax:@1];
   }
   
+    
+    //旋转
   NSDictionary *rotation = ks[@"r"];
   if (rotation == nil) {
     rotation = ks[@"rz"];
@@ -101,15 +120,19 @@
     }];
   }
   
+    //位置:位置下有s属性时会从x和y读取，没有s时也从k读取
   NSDictionary *position = ks[@"p"];
   if ([position[@"s"] boolValue]) {
     // Separate dimensions
     _positionX = [[LOTAnimatableNumberValue alloc] initWithNumberValues:position[@"x"] frameRate:_framerate];
     _positionY = [[LOTAnimatableNumberValue alloc] initWithNumberValues:position[@"y"] frameRate:_framerate];
   } else {
+
+      //从该外观属性中的K值读取
     _position = [[LOTAnimatablePointValue alloc] initWithPointValues:position frameRate:_framerate];
   }
   
+    //锚点
   NSDictionary *anchor = ks[@"a"];
   if (anchor) {
     _anchor = [[LOTAnimatablePointValue alloc] initWithPointValues:anchor frameRate:_framerate];
@@ -117,6 +140,7 @@
     _anchor.usePathAnimation = NO;
   }
   
+    //缩放
   NSDictionary *scale = ks[@"s"];
   if (scale) {
     _scale = [[LOTAnimatableScaleValue alloc] initWithScaleValues:scale frameRate:_framerate];
